@@ -1,6 +1,7 @@
 {
   "name": "yt-drive-stream",
   "version": "1.0.0",
+  "description": "Google Drive to YouTube Live Stream",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
