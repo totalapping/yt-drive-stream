@@ -1,54 +1,43 @@
-const { spawn } = require('child_process');
 const express = require('express');
-
+const { spawn } = require('child_process');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Google Drive Downloadable Link
-const videoURL = "https://drive.google.com/uc?export=download&id=1E312l5AF5Obg8oVn6HCZ_uAmjHUuUwYu";
+// Direct link to your Google Drive video (replace with your link)
+const videoUrl = "https://drive.google.com/uc?export=download&id=1E312l5AF5Obg8oVn6HCZ_uAmjHUuUwYu";
 
 app.get('/', (req, res) => {
-  res.send('Streaming is live!');
+  res.send('YouTube Live Stream from Google Drive');
 });
 
-function startStream() {
+app.get('/stream', (req, res) => {
   console.log('Starting Stream...');
-
+  
   const ffmpeg = spawn('ffmpeg', [
     '-re',
-    '-i', videoURL,
+    '-i', videoUrl,
     '-c:v', 'libx264',
     '-preset', 'ultrafast',
-    '-b:v', '4500k',
-    '-maxrate', '4500k',
-    '-bufsize', '9000k',
+    '-tune', 'zerolatency',
+    '-b:v', '2500k',
+    '-maxrate', '2500k',
+    '-bufsize', '5000k',
+    '-pix_fmt', 'yuv420p',
+    '-g', '60',
     '-c:a', 'aac',
     '-b:a', '128k',
+    '-ar', '44100',
     '-f', 'flv',
-    'rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY'
+    process.env.RTMP_URL
   ]);
 
-  ffmpeg.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
-  });
+  ffmpeg.stdout.on('data', (data) => console.log(`stdout: ${data}`));
+  ffmpeg.stderr.on('data', (data) => console.error(`stderr: ${data}`));
+  ffmpeg.on('close', (code) => console.log(`FFmpeg exited with code ${code}`));
 
-  ffmpeg.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
-  });
-
-  ffmpeg.on('close', (code) => {
-    console.log(`FFmpeg exited with code ${code}`);
-    if (code !== 0) {
-      console.error('Stream crashed. Restarting...');
-      setTimeout(startStream, 5000); // 5 second delay before restart
-    }
-  });
-}
-
-// Start the stream
-startStream();
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  res.send('Streaming started!');
 });
 
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
